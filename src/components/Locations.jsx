@@ -1,4 +1,7 @@
 var React = require('react');
+
+var alt = require('../alt')
+
 var AltContainer = require('alt/AltContainer');
 var LocationStore = require('../stores/LocationStore');
 var FavoritesStore = require('../stores/FavoritesStore');
@@ -12,7 +15,7 @@ var Favorites = React.createClass({
           return (
             <li key={i}>{location.name}</li>
           );
-        })}
+        }).toArray()}
       </ul>
     );
   }
@@ -55,13 +58,19 @@ var AllLocations = React.createClass({
               {location.name} {location.has_favorite ? '<3' : faveButton}
             </li>
           );
-        })}
+        }).toArray()}
       </ul>
     );
   }
 });
 
 var Locations = React.createClass({
+  getInitialState() {
+    return {
+      snapshot: null
+    }
+  },
+
   componentDidMount() {
     LocationStore.fetchLocations();
   },
@@ -69,17 +78,47 @@ var Locations = React.createClass({
   render() {
     return (
       <div>
+        <div>
+          <button onClick={this.takeSnapshot}>Take snapshot</button>
+          <button onClick={this.restoreSnapshot}>restore snapshot</button>
+        </div>
         <h1>Locations</h1>
-        <AltContainer store={LocationStore}>
+        <AltContainer stores={{
+          locations: function(props) {
+            return {
+              store: LocationStore,
+              value: LocationStore.getState()
+            }
+          }
+        }}>
           <AllLocations />
         </AltContainer>
 
         <h1>Favorites</h1>
-        <AltContainer store={FavoritesStore}>
+        <AltContainer stores={{
+          locations: function(props) {
+            return {
+              store: FavoritesStore,
+              value: FavoritesStore.getState()
+            }
+          }
+        }}>
           <Favorites />
         </AltContainer>
       </div>
     );
+  },
+
+  restoreSnapshot() {
+    if (this.state.snapshot) {
+      alt.bootstrap(this.state.snapshot);
+    }
+  },
+
+  takeSnapshot() {
+    var snapshot = alt.takeSnapshot();
+    this.setState({ snapshot: snapshot });
+    console.log(snapshot);
   }
 });
 

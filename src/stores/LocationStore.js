@@ -1,12 +1,15 @@
 var alt = require('../alt');
+
+var Immutable = require('immutable')
+var makeImmutable = require('alt/utils/ImmutableUtil')
+
 var LocationActions = require('../actions/LocationActions');
 var LocationSource = require('../sources/LocationSource');
 var FavoritesStore = require('./FavoritesStore');
 
 class LocationStore {
   constructor() {
-    this.locations = [];
-    this.errorMessage = null;
+    this.state = Immutable.List([]);
 
     this.bindListeners({
       handleUpdateLocations: LocationActions.UPDATE_LOCATIONS,
@@ -23,42 +26,44 @@ class LocationStore {
   }
 
   handleUpdateLocations(locations) {
-    this.locations = locations;
-    this.errorMessage = null;
+    this.setState(Immutable.List(locations));
   }
 
   handleFetchLocations() {
-    this.locations = [];
+    this.setState(Immutable.List([]));
   }
 
   handleLocationsFailed(errorMessage) {
-    this.errorMessage = errorMessage;
+    // this is noop for this example
   }
 
   resetAllFavorites() {
-    this.locations = this.locations.map((location) => {
-      return {
-        id: location.id,
-        name: location.name,
-        has_favorite: false
-      };
-    });
+    this.setState(this.state.map((location) => {
+        return {
+          id: location.id,
+          name: location.name,
+          has_favorite: false
+        };
+      })
+    );
   }
 
   setFavorites(location) {
     this.waitFor(FavoritesStore);
 
-    var favoritedLocations = FavoritesStore.getState().locations;
+    var favoritedLocations = FavoritesStore.getState();
 
     this.resetAllFavorites();
 
     favoritedLocations.forEach((location) => {
       // find each location in the array
-      for (var i = 0; i < this.locations.length; i += 1) {
-
+      for (var i = 0; i < this.state.size; i += 1) {
         // set has_favorite to true
-        if (this.locations[i].id === location.id) {
-          this.locations[i].has_favorite = true;
+        if (this.state.get(i).id === location.id) {
+          var location = this.state.get(i);
+          location.has_favorite = true;
+          this.setState(this.state.set(i, location));
+
           break;
         }
       }
@@ -66,15 +71,10 @@ class LocationStore {
   }
 
   getLocation(id) {
-    var { locations } = this.getState();
-    for (var i = 0; i < locations.length; i += 1) {
-      if (locations[i].id === id) {
-        return locations[i];
-      }
-    }
-
-    return null;
+    return this.getState().find((location) => {
+      return location.id === id;
+    });
   }
 }
 
-module.exports = alt.createStore(LocationStore, 'LocationStore');
+module.exports = alt.createStore(makeImmutable(LocationStore), 'LocationStore');

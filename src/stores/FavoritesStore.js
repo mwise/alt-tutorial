@@ -1,9 +1,13 @@
 var alt = require('../alt');
+
+var Immutable = require('immutable')
+var makeImmutable = require('alt/utils/ImmutableUtil')
+
 var LocationActions = require('../actions/LocationActions');
 
 class FavoritesStore {
   constructor() {
-    this.locations = [];
+    this.state = Immutable.List([]);
 
     this.bindListeners({
       addFavoriteLocation: LocationActions.FAVORITE_LOCATION
@@ -11,8 +15,8 @@ class FavoritesStore {
   }
 
   addFavoriteLocation(location) {
-    this.locations.push(location);
+    this.setState(this.state.push(location));
   }
 }
 
-module.exports = alt.createStore(FavoritesStore, 'FavoritesStore');
+module.exports = alt.createStore(makeImmutable(FavoritesStore), 'FavoritesStore');
